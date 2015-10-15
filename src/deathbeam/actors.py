@@ -1,10 +1,10 @@
+from __future__ import absolute_import
 import math
 import os
 
 import pyglet
 
-import defs
-import helpers
+from . import defs, helpers
 
 
 _actor_classes = []
@@ -63,7 +63,7 @@ class Actor(object):
         self.PHYSICS = defs.PHYSICS_ATTACHED
 
     def attach_text(self, text):
-        from particles import Text  # imported here for circular dependencies
+        from .particles import Text  # imported here for circular dependencies
 
         text = self.game.spawn(Text, text)
         text.attach(self)

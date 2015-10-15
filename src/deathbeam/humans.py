@@ -1,13 +1,14 @@
+from __future__ import absolute_import
 import math
 import random
 
 import pyglet
 from pyglet.window.key import LEFT, RIGHT, SPACE
 
-import defs
-from actors import Actor, Sound, register_actor
-from aliens import Mothership
-from particles import (
+from . import defs
+from .actors import Actor, Sound, register_actor
+from .aliens import Mothership
+from .particles import (
     JetpackFlame, JetpackIgniteSmoke, JetpackSmoke, RocketFlame,
     RocketFlameOrange, RocketFlameRed, RocketSmoke, Text)
 

@@ -1,8 +1,8 @@
+from __future__ import absolute_import
 import os
 import pyglet
 
-import defs
-import helpers
+from . import defs, helpers
 
 
 _worlds = {}

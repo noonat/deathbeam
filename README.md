@@ -17,38 +17,38 @@ The game is written in Python 2.7 using [Pyglet]. I used [Tile Studio] for map.
   </tr>
   <tr>
     <td><img src="https://phuce.com/games/deathbeam/deathbeam_kill.png" alt="Deathbeam"></td>
-    <td>It’s charring humans left and right with its deathbeam.<br>How rude.</td>
+    <td>It&apos;s charring humans left and right with its deathbeam.<br>How rude.</td>
   </tr>
   <tr>
     <td><img src="https://phuce.com/games/deathbeam/you.png" alt="You"></td>
     <td>This is you: Rescue Bot XLD-14Z. You&apos;re the humans&rsquo; only hope.</td>
   </tr>
   <tr>
-    <td><img src="https://phuce.com/games/deathbeam/jetpack.png" alt="Jetpack" /></td>
+    <td><img src="https://phuce.com/games/deathbeam/jetpack.png" alt="Jetpack"></td>
     <td>You can pick up humans and use your jets to carry them off to<br>safety and wellness.<br><em><strong>left &amp; right arrow</strong> to move<br><strong>space</strong> to jet</em></td>
   </tr>
   <tr>
-    <td><img src="https://phuce.com/games/deathbeam/teleport.png" alt="Teleport" /></td>
+    <td><img src="https://phuce.com/games/deathbeam/teleport.png" alt="Teleport"></td>
     <td>Drop humans at the teleporters to beam them to safety.<br>Teleporting many at once earns you extra points!</td>
   </tr>
   <tr>
-    <td><img src="https://phuce.com/games/deathbeam/civilian.png" alt="Civilian" /></td>
+    <td><img src="https://phuce.com/games/deathbeam/civilian.png" alt="Civilian"></td>
     <td>Some humans are worth more than others. This one, however,<br>is boring. He is worth only 50 points.</td>
   </tr>
   <tr>
-    <td><img src="https://phuce.com/games/deathbeam/scientist.png" alt="Scientist" /></td>
+    <td><img src="https://phuce.com/games/deathbeam/scientist.png" alt="Scientist"></td>
     <td>This is a scientist. Scientists are worth <strong>250</strong> points.</td>
   </tr>
   <tr>
-    <td><img src="https://phuce.com/games/deathbeam/mr_president.png" alt="President" /></td>
+    <td><img src="https://phuce.com/games/deathbeam/mr_president.png" alt="President"></td>
     <td>This is Mr. President. The humans&rsquo; leader is worth a whopping<br><strong>1000</strong> points, robot.</td>
   </tr>
   <tr>
-    <td><img src="https://phuce.com/games/deathbeam/turret_kill.png" alt="Turret" /></td>
+    <td><img src="https://phuce.com/games/deathbeam/turret_kill.png" alt="Turret"></td>
     <td>Watch out for alien turrets. Your armor protects you, but the humans<br>aren&apos;t so lucky. Poor guys.</td>
   </tr>
   <tr>
-    <td><img src="https://phuce.com/games/deathbeam/rocket.png" alt="Rocket" /></td>
+    <td><img src="https://phuce.com/games/deathbeam/rocket.png" alt="Rocket"></td>
     <td>Rescue as many humans as you can and use the rocket booster<br>to escape to orbit!</td>
   </tr>
 </table>

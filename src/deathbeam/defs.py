@@ -1,8 +1,9 @@
+from __future__ import absolute_import
 import os
 import sys
 
 
-ASSETS_DIR = os.path.join(os.path.dirname(__file__), '..', 'assets')
+ASSETS_DIR = os.path.join(os.path.dirname(__file__), '..', '..', 'assets')
 
 CELL_HUMAN_PLAYER = 1        # 1-49 human actors
 CELL_HUMAN_CIVILIAN = 2

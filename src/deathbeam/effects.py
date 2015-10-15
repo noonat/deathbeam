@@ -1,8 +1,9 @@
+from __future__ import absolute_import
 import random
 
 from pyglet.gl import GL_SRC_ALPHA, GL_DST_COLOR
 
-import defs
+from . import defs
 
 
 _effect_classes = []

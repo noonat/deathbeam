@@ -1,8 +1,9 @@
+from __future__ import absolute_import
 import math
 
-import defs
-from actors import Actor, AmbientSound, Sound, register_actor
-from particles import TurretBullet
+from . import defs
+from .actors import Actor, AmbientSound, Sound, register_actor
+from .particles import TurretBullet
 
 
 @register_actor

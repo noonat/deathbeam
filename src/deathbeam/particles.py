@@ -1,11 +1,11 @@
+from __future__ import absolute_import
 import math
 import random
 
 from pyglet import gl
 
-import defs
-import helpers
-from actors import Actor
+from . import defs, helpers
+from .actors import Actor
 
 
 class Particle(Actor):
