@@ -10,5 +10,6 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 from deathbeam.game import Game
 
 
-Game()
-pyglet.app.run()
+if __name__ == '__main__':
+    Game()
+    pyglet.app.run()

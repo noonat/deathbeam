@@ -2,8 +2,9 @@ from __future__ import absolute_import
 import math
 
 from . import defs
-from .actors import Actor, AmbientSound, Sound, register_actor
+from .actors import Actor, register_actor
 from .particles import TurretBullet
+from .sounds import AmbientSound, Sound
 
 
 @register_actor

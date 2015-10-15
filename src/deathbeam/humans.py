@@ -6,11 +6,12 @@ import pyglet
 from pyglet.window.key import LEFT, RIGHT, SPACE
 
 from . import defs
-from .actors import Actor, Sound, register_actor
+from .actors import Actor, register_actor
 from .aliens import Mothership
 from .particles import (
     JetpackFlame, JetpackIgniteSmoke, JetpackSmoke, RocketFlame,
     RocketFlameOrange, RocketFlameRed, RocketSmoke, Text)
+from .sounds import Sound
 
 
 @register_actor

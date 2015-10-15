@@ -72,11 +72,11 @@ that using [Homebrew]:
 
 Then you can run the game with:
 
-    python src/deathbeam.py
+    ./scripts/deathbeam
 
 If you have performance issues, you can run it in optimized mode:
 
-    python -OO src/deathbeam.py
+    python -OO scripts/deathbeam
 
 [Homebrew]: http://brew.sh/
 

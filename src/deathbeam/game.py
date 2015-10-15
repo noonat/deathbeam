@@ -6,11 +6,12 @@ from pyglet import gl
 from pyglet.window.key import C, ENTER, SPACE
 
 from . import defs, helpers, worlds
-from .actors import AmbientSound, iter_registered_actors
+from .actors import iter_registered_actors
 from .draw import Draw
 from .effects import iter_registered_effects
 from .particles import Arrow, Particle
 from .score import Score
+from .sounds import AmbientSound
 
 
 class Game(object):
