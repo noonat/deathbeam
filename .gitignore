@@ -1,3 +1,4 @@
 .svn
+.tox
 env
 *.pyc

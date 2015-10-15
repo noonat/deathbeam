@@ -1,11 +1,27 @@
-import math, random
-from pyglet import gl
-from pyglet.window import key
+import math
 
-from game import Game
-import defs, helpers, worlds
+import pyglet
+
+import defs
+import helpers
+from game import Draw, Game
+
+
+_actor_classes = []
+
+
+def iter_registered_actors():
+    for cls in _actor_classes:
+        yield cls
+
+
+def register_actor(cls):
+    _actor_classes.append(cls)
+    return cls
+
 
 class Actor(object):
+
     ATTACHED_DISTANCE = 4
     CELL_TYPE = None
     COLLIDE_WITH_ACTORS = True
@@ -46,7 +62,9 @@ class Actor(object):
         self.PHYSICS = defs.PHYSICS_ATTACHED
 
     def attach_text(self, text):
-        text = Game.spawn(particles.Text(text))
+        from particles import Text
+
+        text = Game.spawn(Text(text))
         text.attach(self)
         return text
 
@@ -68,11 +86,14 @@ class Actor(object):
                         continue
                     if not actor.COLLIDE_WITH_ACTORS:
                         continue
-                    if self.x > actor.x + actor.WIDTH or self.x + self.WIDTH < actor.x:
+                    if (self.x > actor.x + actor.WIDTH or
+                            self.x + self.WIDTH < actor.x):
                         continue
-                    if self.y > actor.y + actor.HEIGHT or self.y + self.HEIGHT < actor.y:
+                    if (self.y > actor.y + actor.HEIGHT or
+                            self.y + self.HEIGHT < actor.y):
                         continue
-                    if isinstance(actor.COLLIDE_WITH_ACTORS, list) and not self.CELL_TYPE in actor.COLLIDE_WITH_ACTORS:
+                    if (isinstance(actor.COLLIDE_WITH_ACTORS, list) and
+                            self.CELL_TYPE not in actor.COLLIDE_WITH_ACTORS):
                         continue
                     self.on_collide(actor, True)
                     actor.on_collide(self, True)
@@ -82,18 +103,23 @@ class Actor(object):
                     continue
                 if not actor.COLLIDE_WITH_ACTORS:
                     continue
-                if self.x > actor.x + actor.WIDTH or self.x + self.WIDTH < actor.x:
+                if (self.x > actor.x + actor.WIDTH or
+                        self.x + self.WIDTH < actor.x):
                     continue
-                if self.y > actor.y + actor.HEIGHT or self.y + self.HEIGHT < actor.y:
+                if (self.y > actor.y + actor.HEIGHT or
+                        self.y + self.HEIGHT < actor.y):
                     continue
-                if isinstance(actor.COLLIDE_WITH_ACTORS, list) and not self.CELL_TYPE in actor.COLLIDE_WITH_ACTORS:
+                if (isinstance(actor.COLLIDE_WITH_ACTORS, list) and
+                        self.CELL_TYPE not in actor.COLLIDE_WITH_ACTORS):
                     continue
                 self.on_collide(actor, True)
                 actor.on_collide(self, True)
 
     def _collide_with_world(self):
-        self.x, self.y, hit_1, hit_ground_1, cell = Game.world.map.trace(self.old_x, self.old_y, self.x, self.y)
-        self.x, self.y, hit_2, hit_ground_2, cell = Game.world.map.trace(self.old_x, self.old_y, self.x, self.y)
+        self.x, self.y, hit_1, hit_ground_1, cell = Game.world.map.trace(
+            self.old_x, self.old_y, self.x, self.y)
+        self.x, self.y, hit_2, hit_ground_2, cell = Game.world.map.trace(
+            self.old_x, self.old_y, self.x, self.y)
         if not self.on_ground and (hit_ground_1 or hit_ground_2):
             self.on_ground = True
         cell = Game.world.map.get_for_xy(self.x, self.y)
@@ -108,26 +134,28 @@ class Actor(object):
     def draw(self):
         x = self.x
         y = self.y
-        #if self._image:
+        # if self._image:
         #    self._image.blit(x, y)
-        #else:
+        # else:
         Draw.quad(x, y, self.WIDTH, self.HEIGHT, self.Z, self.COLOR)
 
-    def image():
-        def fget(self):
-            return self._image
-        def fset(self, img):
-            if isinstance(img, str) or isinstance(img, unicode):
-                img = pyglet.image.load(img)
-                helpers.set_nearest(img)
-            self._image = img
-            if self._image:
-                helpers.set_anchor(self._image, 0.5, 0.0)
-            return self._image
-        def fdel(self):
-            del self._image
-        return locals()
-    image = property(**image())
+    @property
+    def image(self):
+        return self._image
+
+    @image.setter
+    def image(self, new_image):
+        if isinstance(new_image, str) or isinstance(new_image, unicode):
+            new_image = pyglet.image.load(new_image)
+            helpers.set_nearest(new_image)
+        self._image = new_image
+        if self._image:
+            helpers.set_anchor(self._image, 0.5, 0.0)
+        return self._image
+
+    @image.deleter
+    def image(self):
+        del self._image
 
     def on_attached(self, actor):
         pass
@@ -198,18 +226,22 @@ class Actor(object):
         self.vel_x *= self.DRAG
         self.vel_y *= self.DRAG
         if abs(self.vel_x) < 0.001:
-            self.vel_x = 0;
+            self.vel_x = 0
         if abs(self.vel_y) < 0.001:
             self.vel_y = 0
 
+
 class Sound(object):
+
     cache = {}
 
-    def __init__(self, actor, filename, min_distance=10.0, pitch=1.0, volume=1.0):
+    def __init__(self, actor, filename, min_distance=10.0, pitch=1.0,
+                 volume=1.0):
         if not defs.SOUND:
             return
-        if not filename in Sound.cache:
-            Sound.cache[filename] = pyglet.media.load(filename, streaming=False)
+        if filename not in Sound.cache:
+            Sound.cache[filename] = pyglet.media.load(filename,
+                                                      streaming=False)
         self.sound = Sound.cache[filename]
         self.actor = actor
         self.min_distance = min_distance
@@ -225,7 +257,9 @@ class Sound(object):
         m.position = (self.actor.x, self.actor.y, 0)
         m.volume = self.volume
 
+
 class AmbientSound(Sound):
+
     sounds = []
 
     def __init__(self, actor, filename, auto_update=True, min_distance=10.0,
@@ -268,6 +302,3 @@ class AmbientSound(Sound):
         for sound in self.sounds:
             if sound.auto_update:
                 sound.update()
-
-from aliens import *
-from humans import *

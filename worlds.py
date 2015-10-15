@@ -1,29 +1,31 @@
-import math
 import pyglet
-from pyglet.gl import *
-import helpers
 
-from game import Game, Draw
 import defs
+import helpers
+from game import Game, Draw
+
 
 class Map(object):
+
     def __init__(self, **kwargs):
         self.loaded = False
         self.world = None
         for kw in kwargs:
             setattr(self, kw, kwargs[kw])
-    
+
     def draw(self):
-        min_x, min_y = self.get_cxcy_for_xy(Game.camera_x - self.tileset.tile_width,
-                                            Game.camera_y - self.tileset.tile_height)
-        max_x, max_y = self.get_cxcy_for_xy(Game.camera_x + Game.camera_width + self.tileset.tile_width,
-                                            Game.camera_y + Game.camera_height + self.tileset.tile_height)
+        min_x, min_y = self.get_cxcy_for_xy(
+            Game.camera_x - self.tileset.tile_width,
+            Game.camera_y - self.tileset.tile_height)
+        max_x, max_y = self.get_cxcy_for_xy(
+            Game.camera_x + Game.camera_width + self.tileset.tile_width,
+            Game.camera_y + Game.camera_height + self.tileset.tile_height)
         for y in range(min_y, max_y + 1):
             for x in range(min_x, max_x + 1):
                 c = self.cells[y][x]
                 if c.tile:
                     c.draw()
-    
+
     def get_cxcy_for_xy(self, x, y):
         x = int(x / self.tileset.tile_width)
         y = int(y / self.tileset.tile_height)
@@ -36,21 +38,21 @@ class Map(object):
         elif y >= self.height:
             y = self.height - 1
         return x, y
-    
+
     def get_for_type(self, type):
         return self.cells_by_type.get(type, [])
 
     def get_for_cxcy(self, x, y):
-        if x < 0 or  x >= self.width or y < 0 or y >= self.height:
+        if x < 0 or x >= self.width or y < 0 or y >= self.height:
             return None
         return self.cells[y][x]
-    
+
     def get_for_xy(self, x, y):
         x = int(x / self.tileset.tile_width)
         y = int(y / self.tileset.tile_height)
-        if x < 0 or  x >= self.width or y < 0 or y >= self.height:
+        if x < 0 or x >= self.width or y < 0 or y >= self.height:
             return None
-        return self.cells[y][x]        
+        return self.cells[y][x]
 
     def load(self, world):
         print "loading %s.map:%s" % (world.name, self.name)
@@ -75,7 +77,7 @@ class Map(object):
                                self.tileset.tile_width,
                                self.tileset.tile_height,
                                tile, self.types[y][x], self.bounds[y][x])
-                if not cell.type in self.cells_by_type:
+                if cell.type not in self.cells_by_type:
                     self.cells_by_type[cell.type] = []
                 self.cells_by_type[cell.type].append(cell)
                 row.append(cell)
@@ -91,17 +93,19 @@ class Map(object):
             return (new_x, new_y, False, False, new_cell)
         return new_cell.trace(old_cell, old_x, old_y, new_x, new_y)
 
+
 class MapCell(object):
+
     def __init__(self, cx, cy, x, y, width, height, tile, type, bounds):
         self.cx = cx
         self.cy = cy
-        self.x = x # x is the left
-        self.y = y # y is the bottom
+        self.x = x  # x is the left
+        self.y = y  # y is the bottom
         self.width = width
         self.height = height
-        self.tile = tile # tile is the tileset image for this cell
-        self.type = type # type is a map specific value 0-255
-        self.bounds = bounds # bounds is an edges bitmask for collision
+        self.tile = tile  # tile is the tileset image for this cell
+        self.type = type  # type is a map specific value 0-255
+        self.bounds = bounds  # bounds is an edges bitmask for collision
         self.edgeLeft = self.bounds & defs.CELL_EDGE_LEFT and True or False
         self.edgeRight = self.bounds & defs.CELL_EDGE_RIGHT and True or False
         self.edgeTop = self.bounds & defs.CELL_EDGE_TOP and True or False
@@ -109,26 +113,30 @@ class MapCell(object):
         self.edgeSlope = self.bounds & defs.CELL_EDGE_SLOPE and True or False
         self.neighbors = MapCellNeighbors(self.cx, self.cy)
         self.metadata = {}
-    
+
     def __delitem__(self, name):
         del self.metadata[name]
-    
+
     def __getitem__(self, name):
         return self.metadata.get(name)
-    
+
     def __setitem__(self, name, value):
         self.metadata[name] = value
-    
+
     def __str__(self):
-        return "<MapCell cx=%d, cy=%d x=%d y=%d w=%d h=%d bounds=%d type=%d>" % \
-            (self.cx, self.cy, self.x, self.y, self.width, self.height, self.bounds, self.type)
-    
+        return (
+            "<MapCell cx=%d, cy=%d x=%d y=%d w=%d h=%d bounds=%d type=%d>" %
+            (self.cx, self.cy, self.x, self.y, self.width, self.height,
+             self.bounds, self.type))
+
     def draw(self, color=None):
         if not self.type and not (self.bounds & defs.CELL_EDGE_SLOPE):
-            Draw.quad(self.x, self.y, self.width, self.height, defs.Z_MAP_BACKGROUND, (0, 0, 0, 1))
+            Draw.quad(self.x, self.y, self.width, self.height,
+                      defs.Z_MAP_BACKGROUND, (0, 0, 0, 1))
         else:
-            Draw.callback(self.tile.blit, self.x, self.y, z=defs.Z_MAP_BACKGROUND)
-    
+            Draw.callback(self.tile.blit, self.x, self.y,
+                          z=defs.Z_MAP_BACKGROUND)
+
     def trace(self, old_cell, old_x, old_y, new_x, new_y):
         hit = hit_ground = False
         if self.edgeSlope:
@@ -159,11 +167,12 @@ class MapCell(object):
                 new_y = self.y - 1
         return (new_x, new_y, hit, hit_ground, self)
 
+
 class MapCellNeighbors(object):
     def __init__(self, cx, cy):
         self.cx = cx
         self.cy = cy
-    
+
     def __getattribute__(self, name):
         cx = object.__getattribute__(self, "cx")
         cy = object.__getattribute__(self, "cy")
@@ -179,27 +188,33 @@ class MapCellNeighbors(object):
             raise AttributeError
         return Game.world.map.get_for_cxcy(cx, cy)
 
+
 class TileSet(object):
+
     def __init__(self, **kwargs):
         self.loaded = False
         self.world = None
         for kw in kwargs:
             setattr(self, kw, kwargs[kw])
         self.tiles = []
-    
+
     def load(self, world):
         if self.loaded:
             return
         self.world = world
         print "loading %s.tileset:%s" % (world.name, self.name)
         self.image = pyglet.image.load(self.name+".png")
-        self.image_grid = pyglet.image.ImageGrid(self.image, self.length, self.stride)
-        self.tiles = [self.image_grid[i] for i in range(len(self.image_grid) - 1, -1, -1)]
+        self.image_grid = pyglet.image.ImageGrid(self.image, self.length,
+                                                 self.stride)
+        self.tiles = [self.image_grid[i]
+                      for i in range(len(self.image_grid) - 1, -1, -1)]
         for tile in self.tiles:
             helpers.set_nearest(tile.texture)
         self.loaded = True
 
+
 class World(object):
+
     def __init__(self, name, tilesets, maps):
         self.loaded = False
         self.name = name
@@ -207,7 +222,7 @@ class World(object):
         self.tilesets = tilesets
 
     def load(self):
-        #if self.loaded:
+        # if self.loaded:
         #    return
         print "loading world:", self.name
         for tileset in self.tilesets.itervalues():
@@ -215,16 +230,19 @@ class World(object):
         for map in self.maps.itervalues():
             map.load(self)
         self.loaded = True
-    
+
     def load_map(self, name):
         self.map = self.maps.get(name)
         return self.map
 
+
 _worlds = {}
+
 
 def add(name, tilesets, maps):
     global _worlds
     _worlds[name] = World(name, tilesets, maps)
+
 
 def load(name):
     global _worlds
