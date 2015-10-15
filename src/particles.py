@@ -6,7 +6,6 @@ from pyglet import gl
 import defs
 import helpers
 from actors import Actor
-from game import Draw, Game
 
 
 class Particle(Actor):
@@ -24,9 +23,9 @@ class Particle(Actor):
     HEIGHT = 1
     Z = defs.Z_PARTICLE_BACKGROUND
 
-    def __init__(self, x=0.0, y=0.0, spawn_time=None, **kwargs):
-        super(Particle, self).__init__(x, y)
-        self.spawn_time = spawn_time or Game.time
+    def __init__(self, game, x=0.0, y=0.0, spawn_time=None, **kwargs):
+        super(Particle, self).__init__(game, x, y)
+        self.spawn_time = spawn_time or self.game.time
         self.life_time = self.LIFE_TIME
         if self.life_time is not None:
             self.death_time = self.spawn_time + self.LIFE_TIME
@@ -45,27 +44,28 @@ class Particle(Actor):
     def lerp_life(self):
         if self.life_time is None:
             return 1.0
-        life = (self.death_time - Game.time) / self.life_time
+        life = (self.death_time - self.game.time) / self.life_time
         life = helpers.clamp(life, 0.0, 1.0)
         return life
 
     def draw(self):
-        if Game.time < self.spawn_time:
+        if self.game.time < self.spawn_time:
             return
         life = self.lerp_life()
         alpha = self.COLOR[3]
         if self.LIFE_FADE:
             alpha *= life
-        Draw.quad(self.x, self.y, self.WIDTH, self.HEIGHT, self.Z,
-                  (self.COLOR[0], self.COLOR[1], self.COLOR[2], alpha))
+        self.game.draw.quad(self.x, self.y, self.WIDTH, self.HEIGHT, self.Z,
+                            (self.COLOR[0], self.COLOR[1], self.COLOR[2],
+                             alpha))
 
     def update(self, dt):
-        if Game.time < self.spawn_time:
+        if self.game.time < self.spawn_time:
             return
-        if self.death_time is not None and Game.time > self.death_time:
-            Game.remove(self)
+        if self.death_time is not None and self.game.time > self.death_time:
+            self.game.remove(self)
             return
-        return Actor.update(self, dt)
+        return super(Particle, self).update(dt)
 
 
 class Arrow(Particle):
@@ -81,15 +81,15 @@ class Arrow(Particle):
     Z = defs.Z_PARTICLE_BACKGROUND
 
     def draw(self):
-        if Game.time < self.spawn_time:
+        if self.game.time < self.spawn_time:
             return
-        Draw.callback(self.draw_callback, z=self.Z)
+        self.game.draw.callback(self.draw_callback, z=self.Z)
 
     def draw_callback(self, z):
         x, y = self.x, self.y
         w, h = self.WIDTH, self.HEIGHT
         hh = h * 0.5
-        f = (math.sin(Game.time * self.BOUNCE_SPEED) + 1) * 0.5
+        f = (math.sin(self.game.time * self.BOUNCE_SPEED) + 1) * 0.5
         f = f * f * f
         x += f * self.BOUNCE_AMOUNT
         gl.glLineWidth(self.LINE_WIDTH)
@@ -183,13 +183,13 @@ class Text(Particle):
     GRAVITY = 0
     LIFE_TIME = 2.0
 
-    def __init__(self, text, *args, **kwargs):
-        super(Text, self).__init__(*args, **kwargs)
-        self.label = Draw.create_label(6)
+    def __init__(self, game, text, *args, **kwargs):
+        super(Text, self).__init__(game, *args, **kwargs)
+        self.label = self.game.draw.create_label(6)
         self.label.text = text
 
     def draw(self):
-        if Game.time < self.spawn_time:
+        if self.game.time < self.spawn_time:
             return
         life = self.lerp_life()
         life *= life / 1.0
@@ -197,7 +197,7 @@ class Text(Particle):
         x = self.x
         if self.anchor:
             x += self.anchor.WIDTH + 5
-        Draw.label(self.label, x, self.y)
+        self.game.draw.label(self.label, x, self.y)
 
 
 class TurretBullet(Particle):
@@ -217,7 +217,7 @@ class TurretBullet(Particle):
     HEIGHT = 5
 
     def draw(self):
-        if Game.time < self.spawn_time:
+        if self.game.time < self.spawn_time:
             return
         nx = self.vel_x
         ny = self.vel_y
@@ -225,7 +225,7 @@ class TurretBullet(Particle):
         if length:
             nx /= length
             ny /= length
-            Draw.callback(self.draw_callback, nx, ny, z=self.Z)
+            self.game.draw.callback(self.draw_callback, nx, ny, z=self.Z)
 
     def draw_callback(self, nx, ny, z):
         gl.glLineWidth(self.BOLT_WIDTH)
@@ -241,4 +241,4 @@ class TurretBullet(Particle):
 
     def on_remove(self):
         for i in range(20):
-            Game.spawn(JetpackIgniteSmoke(self.x, self.y))
+            self.game.spawn(JetpackIgniteSmoke, self.x, self.y)

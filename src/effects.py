@@ -3,7 +3,6 @@ import random
 from pyglet.gl import GL_SRC_ALPHA, GL_DST_COLOR
 
 import defs
-from game import Game, Draw
 
 
 _effect_classes = []
@@ -22,11 +21,11 @@ def register_effect(cls):
 class Effect(object):
 
     @classmethod
-    def pre_draw(self):
+    def pre_draw(self, game):
         pass
 
     @classmethod
-    def post_draw(self):
+    def post_draw(self, game):
         pass
 
 
@@ -37,24 +36,24 @@ class Mothership(Effect):
     SHAKE = 5
 
     @classmethod
-    def pre_draw(self):
+    def pre_draw(self, game):
         self.f = 0.0
-        if Game.mothership:
-            self.x = abs(Game.player.x - Game.mothership.x)
+        if game.mothership:
+            self.x = abs(game.player.x - game.mothership.x)
             if self.x < self.DISTANCE:
                 self.f = 1.0 - (self.x / self.DISTANCE)
                 self.f *= self.f
-                Game.camera_x += (
+                game.camera_x += (
                     random.uniform(-self.SHAKE, self.SHAKE) * self.f)
-                Game.camera_y += (
+                game.camera_y += (
                     random.uniform(-self.SHAKE, self.SHAKE) * self.f)
 
     @classmethod
-    def post_draw(self):
-        Draw.quad(Game.camera_x, Game.camera_y, Game.camera_width,
-                  Game.camera_height, z=defs.Z_OVERLAY,
-                  c1=(1, 1, 1, self.f * self.f),
-                  bf=(GL_SRC_ALPHA, GL_DST_COLOR))
+    def post_draw(self, game):
+        game.draw.quad(game.camera_x, game.camera_y, game.camera_width,
+                       game.camera_height, z=defs.Z_OVERLAY,
+                       c1=(1, 1, 1, self.f * self.f),
+                       bf=(GL_SRC_ALPHA, GL_DST_COLOR))
 
 
 @register_effect
@@ -64,8 +63,8 @@ class Space(Effect):
     SPACE = (720, 960)
 
     @classmethod
-    def lerp_for_y(self, min_y, max_y):
-        f = Game.player.y * 1.0 - min_y
+    def lerp_for_y(self, game, min_y, max_y):
+        f = game.player.y * 1.0 - min_y
         if f > 0:
             f /= max_y - min_y
             if f > 1.0:
@@ -75,13 +74,13 @@ class Space(Effect):
             return 0
 
     @classmethod
-    def pre_draw(self):
-        f = self.lerp_for_y(*self.ATMOSPHERE)
+    def pre_draw(self, game):
+        f = self.lerp_for_y(game, *self.ATMOSPHERE)
         if f:
-            Draw.quad(Game.camera_x, Game.camera_y, Game.camera_width,
-                      Game.camera_height, z=-0.99, c1=(0, 0, 0, f),
-                      c3=(0, 0, 0, 0))
-        f = self.lerp_for_y(*self.SPACE)
+            game.draw.quad(game.camera_x, game.camera_y, game.camera_width,
+                           game.camera_height, z=-0.99, c1=(0, 0, 0, f),
+                           c3=(0, 0, 0, 0))
+        f = self.lerp_for_y(game, *self.SPACE)
         if f:
-            Draw.quad(Game.camera_x, Game.camera_y, Game.camera_width,
-                      Game.camera_height, z=-0.98, c1=(0, 0, 0, f))
+            game.draw.quad(game.camera_x, game.camera_y, game.camera_width,
+                           game.camera_height, z=-0.98, c1=(0, 0, 0, f))

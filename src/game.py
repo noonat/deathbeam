@@ -6,26 +6,28 @@ from pyglet.window.key import C, ENTER, SPACE
 
 import defs
 import helpers
+import worlds
+from actors import AmbientSound, iter_registered_actors
+from effects import iter_registered_effects
+from particles import Arrow, Particle
 
 
 class Draw(object):
 
-    @classmethod
-    def __init__(self):
+    def __init__(self, game):
+        self.game = game
         self.callbacks = {}
         self.labels = []
         self.quads = {}
 
-    @classmethod
     def create_label(self, size=12, x=0.0, y=0.0, text='', **kwargs):
         return pyglet.text.Label(text, font_name=defs.FONT, font_size=size,
                                  x=x, y=y)
 
-    @classmethod
     def flush(self):
         gl.glPushMatrix()
         gl.glScalef(defs.WINDOW_SCALE[0], defs.WINDOW_SCALE[1], 1)
-        gl.glTranslatef(-Game.camera_x, -Game.camera_y, 0)
+        gl.glTranslatef(-self.game.camera_x, -self.game.camera_y, 0)
         # draw quads
         keys = list(set(self.callbacks.keys() + self.quads.keys()))
         keys.sort()
@@ -67,12 +69,11 @@ class Draw(object):
         self.quads = {}
         self.flush_labels()
 
-    @classmethod
     def flush_labels(self):
         gl.glClear(gl.GL_DEPTH_BUFFER_BIT)
         gl.glPushMatrix()
-        gl.glTranslatef(-Game.camera_x * defs.WINDOW_SCALE[0],
-                        -Game.camera_y * defs.WINDOW_SCALE[1], 0)
+        gl.glTranslatef(-self.game.camera_x * defs.WINDOW_SCALE[0],
+                        -self.game.camera_y * defs.WINDOW_SCALE[1], 0)
         for label, x, y, scale in self.labels:
             if scale:
                 gl.glPushMatrix()
@@ -93,19 +94,16 @@ class Draw(object):
         gl.glEnable(gl.GL_DEPTH_TEST)
         gl.glPopMatrix()
         # self.fps_label.draw()
-        Score.draw()
+        self.game.score.draw()
 
-    @classmethod
     def callback(self, callback, *args, **kwargs):
         if kwargs['z'] not in self.callbacks:
             self.callbacks[kwargs['z']] = []
         self.callbacks[kwargs['z']].append((callback, args, kwargs))
 
-    @classmethod
     def label(self, label, x, y, scale=None):
         self.labels.append((label, x, y, scale))
 
-    @classmethod
     def quad(self, x, y, w, h, z, c1=None, c2=None, c3=None, c4=None, bf=None):
         if z not in self.quads:
             self.quads[z] = []
@@ -116,15 +114,7 @@ class Game(object):
 
     window = None
 
-    @classmethod
-    def run(self):
-        self.__init__()
-        pyglet.app.run()
-
-    @classmethod
     def __init__(self):
-        from actors import AmbientSound
-
         # window
         if not self.window:
             pyglet.font.add_file(defs.FONT_FILE)
@@ -153,8 +143,8 @@ class Game(object):
         gl.glBlendFunc(gl.GL_SRC_ALPHA, gl.GL_ONE_MINUS_SRC_ALPHA)
 
         # game
-        Draw.__init__()
-        Score.__init__()
+        self.draw = Draw(self)
+        self.score = Score(self)
 
         AmbientSound.stop_all()
         self.actors = []
@@ -176,56 +166,41 @@ class Game(object):
         self.time = 0
         self.load()
 
-    @classmethod
     def get_world(self):
         return self.world
 
-    @classmethod
     def load(self):
         if self.loaded:
             return
         print 'loading'
 
-        # These modules need to be imported because they register things
-        # that we need to load the world.
-        import tiles   # noqa
-        import aliens  # noqa
-        import humans  # noqa
-
-        import worlds
-        from actors import iter_registered_actors
-        from effects import iter_registered_effects
-        from particles import Arrow
-
         for cls in iter_registered_effects():
             self.effects.append(cls)
 
         # Load the world, and spawn all the actors in it
-        self.world = worlds.load('tiles')
+        self.world = worlds.load(self, 'tiles')
         self.world.load_map('test_map_horiz')
         for cls in iter_registered_actors():
             cell_type = cls.CELL_TYPE
             if cell_type:
                 for cell in self.world.map.get_for_type(cell_type):
-                    self.spawn(cls(x=cell.x, y=cell.y))
+                    self.spawn(cls, x=cell.x, y=cell.y)
 
         self.player = self.actors_by_type[defs.CELL_HUMAN_PLAYER][0]
         self.mothership = self.actors_by_type[defs.CELL_ALIEN_MOTHERSHIP][0]
 
         # Create an arrow pointing to the right, above the player's start point
-        self.spawn(Arrow(self.player.x, self.player.y + 100))
+        self.spawn(Arrow, self.player.x, self.player.y + 100)
 
-        # Create an arrow pointing up, at the ending of the level
+        # Create an arrow pointing toward the rocket, at the end
         rocket = self.actors_by_type[defs.CELL_HUMAN_ROCKET][0]
-        self.spawn(Arrow(rocket.x - 35, rocket.y - 15))
+        self.spawn(Arrow, rocket.x - 35, rocket.y - 15)
 
         self.loaded = True
 
-    @classmethod
     def on_close(self):
         print self.time
 
-    @classmethod
     def on_draw(self):
         self.window.clear()
 
@@ -252,39 +227,33 @@ class Game(object):
 
         if not self.game_over:
             for effect in self.effects:
-                effect.pre_draw()
+                effect.pre_draw(self)
             self.world.map.draw()
             for actor in self.actors:
                 actor.draw()
             for particle in self.particles:
                 particle.draw()
             for effect in self.effects:
-                effect.post_draw()
+                effect.post_draw(self)
 
-        Draw.flush()
+        self.draw.flush()
 
         self.window.invalid = False
 
-    @classmethod
     def on_game_over(self):
         pass
 
-    @classmethod
     def on_key_press(self, symbol, modifiers):
         if symbol == C:
             self.screenshot()
         elif symbol == ENTER:
             self.__init__()
 
-    @classmethod
     def on_key_release(self, symbol, modifiers):
         if symbol == SPACE:
             self.player.space_pressed = False
 
-    @classmethod
     def on_update(self, dt, interval):
-        from actors import AmbientSound
-
         self.window.invalid = True
         if self.game_over:
             return
@@ -298,10 +267,7 @@ class Game(object):
                 particle.update(0.015)
         AmbientSound.update_all()
 
-    @classmethod
     def remove(self, actor):
-        from particles import Particle
-
         actor.on_remove()
         if isinstance(actor, Particle):
             helpers.remove(self.particles, actor)
@@ -310,16 +276,13 @@ class Game(object):
             helpers.remove(self.actors_by_type[actor.CELL_TYPE], actor)
         del actor
 
-    @classmethod
     def screenshot(self):
         filename = 'screenshot_%d.png' % time.time()
         print 'writing screenshot to', filename
         pyglet.image.get_buffer_manager().get_color_buffer().save(filename)
 
-    @classmethod
-    def spawn(self, actor):
-        from particles import Particle
-
+    def spawn(self, actor_cls, *args, **kwargs):
+        actor = actor_cls(self, *args, **kwargs)
         if isinstance(actor, Particle):
             self.particles.append(actor)
         else:
@@ -347,61 +310,57 @@ class Score(object):
             'size': 10, 'x': 10, 'y': 10},
         }
 
-    @classmethod
-    def __init__(self):
-        self.you_win = Draw.create_label(size=32, text='YOU WIN!',
-                                         x=defs.WINDOW_WIDTH*0.5,
-                                         y=defs.WINDOW_HEIGHT*0.5)
+    def __init__(self, game):
+        self.game = game
+        self.you_win = self.game.draw.create_label(
+            size=32, text='YOU WIN!', x=defs.WINDOW_WIDTH*0.5,
+            y=defs.WINDOW_HEIGHT*0.5)
         self.you_win.anchor_x = 'center'
         self.you_win.anchor_y = 'center'
-        self.you_died = Draw.create_label(size=32, text='YOU DIED :(',
-                                          x=defs.WINDOW_WIDTH*0.5,
-                                          y=defs.WINDOW_HEIGHT*0.5 + 50)
+        self.you_died = self.game.draw.create_label(
+            size=32, text='YOU DIED :(', x=defs.WINDOW_WIDTH*0.5,
+            y=defs.WINDOW_HEIGHT*0.5 + 50)
         self.you_died.color = (0, 0, 0, 255)
         self.you_died.anchor_x = 'center'
         self.you_died.anchor_y = 'center'
-        self.you_died2 = Draw.create_label(size=16,
-                                           text='press enter to try again',
-                                           x=defs.WINDOW_WIDTH*0.5,
-                                           y=defs.WINDOW_HEIGHT*0.5 - 50)
+        self.you_died2 = self.game.draw.create_label(
+            size=16, text='press enter to try again', x=defs.WINDOW_WIDTH*0.5,
+            y=defs.WINDOW_HEIGHT*0.5 - 50)
         self.you_died2.color = (0, 0, 0, 255)
         self.you_died2.anchor_x = 'center'
         self.you_died2.anchor_y = 'center'
         self.died = False
         self.reset()
 
-    @classmethod
     def add(self, name, value, why=None):
         if name == 'points':
             text = '+%d' % value
             if why:
                 text = why + ' ' + text
-            Game.player.attach_text(text)
+            self.game.player.attach_text(text)
         self.set(name, self.get(name) + value)
 
-    @classmethod
     def get(self, name):
         if not hasattr(self, name):
             return 0
         return getattr(self, name)
 
-    @classmethod
     def set(self, name, value):
         setattr(self, name, value)
         label = name + '_label'
         if not hasattr(self, label):
-            setattr(self, label, Draw.create_label(**self.VALUES[name]))
+            setattr(self, label,
+                    self.game.draw.create_label(**self.VALUES[name]))
             label = getattr(self, label)
         else:
             label = getattr(self, label)
         label.text = self.VALUES[name]['text'] % value
         return value
 
-    @classmethod
     def draw(self):
         gl.glClear(gl.GL_DEPTH_BUFFER_BIT)
-        if Game.game_over:
-            if Game.game_lost:
+        if self.game.game_over:
+            if self.game.game_lost:
                 gl.glBegin(gl.GL_QUADS)
                 gl.glColor3f(1, 1, 1)
                 gl.glVertex3f(0, 0, -0.9)
@@ -427,7 +386,6 @@ class Score(object):
         for name in self.VALUES:
             getattr(self, name + '_label').draw()
 
-    @classmethod
     def reset(self):
         for name in self.VALUES:
             self.set(name, 0)

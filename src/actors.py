@@ -5,7 +5,6 @@ import pyglet
 
 import defs
 import helpers
-from game import Draw, Game
 
 
 _actor_classes = []
@@ -40,7 +39,8 @@ class Actor(object):
     HEIGHT = 3
     Z = defs.Z_ACTOR_BACKGROUND
 
-    def __init__(self, x=0.0, y=0.0, image=None):
+    def __init__(self, game, x=0.0, y=0.0, image=None):
+        self.game = game
         self.x = x
         self.y = y
         self.old_x = x
@@ -63,9 +63,9 @@ class Actor(object):
         self.PHYSICS = defs.PHYSICS_ATTACHED
 
     def attach_text(self, text):
-        from particles import Text
+        from particles import Text  # imported here for circular dependencies
 
-        text = Game.spawn(Text(text))
+        text = self.game.spawn(Text, text)
         text.attach(self)
         return text
 
@@ -80,9 +80,9 @@ class Actor(object):
     def _collide_with_actors(self):
         if isinstance(self.COLLIDE_WITH_ACTORS, list):
             for cell_type in self.COLLIDE_WITH_ACTORS:
-                if cell_type not in Game.actors_by_type:
+                if cell_type not in self.game.actors_by_type:
                     continue
-                for actor in Game.actors_by_type[cell_type]:
+                for actor in self.game.actors_by_type[cell_type]:
                     if actor is self:
                         continue
                     if not actor.COLLIDE_WITH_ACTORS:
@@ -99,7 +99,7 @@ class Actor(object):
                     self.on_collide(actor, True)
                     actor.on_collide(self, True)
         else:
-            for actor in Game.actors:
+            for actor in self.game.actors:
                 if actor is self:
                     continue
                 if not actor.COLLIDE_WITH_ACTORS:
@@ -117,28 +117,25 @@ class Actor(object):
                 actor.on_collide(self, True)
 
     def _collide_with_world(self):
-        self.x, self.y, hit_1, hit_ground_1, cell = Game.world.map.trace(
+        self.x, self.y, hit_1, hit_ground_1, cell = self.game.world.map.trace(
             self.old_x, self.old_y, self.x, self.y)
-        self.x, self.y, hit_2, hit_ground_2, cell = Game.world.map.trace(
+        self.x, self.y, hit_2, hit_ground_2, cell = self.game.world.map.trace(
             self.old_x, self.old_y, self.x, self.y)
         if not self.on_ground and (hit_ground_1 or hit_ground_2):
             self.on_ground = True
-        cell = Game.world.map.get_for_xy(self.x, self.y)
+        cell = self.game.world.map.get_for_xy(self.x, self.y)
         if self.cell is not cell:
             self.cell = cell
             if cell and cell.type:
                 self.on_cell(cell)
         if hit_1 or hit_2:
             if self.REMOVE_ON_COLLIDE:
-                Game.remove(self)
+                self.game.remove(self)
 
     def draw(self):
         x = self.x
         y = self.y
-        # if self._image:
-        #    self._image.blit(x, y)
-        # else:
-        Draw.quad(x, y, self.WIDTH, self.HEIGHT, self.Z, self.COLOR)
+        self.game.draw.quad(x, y, self.WIDTH, self.HEIGHT, self.Z, self.COLOR)
 
     @property
     def image(self):
@@ -168,7 +165,7 @@ class Actor(object):
         if actor.DAMAGE_ON_COLLIDE:
             self.on_damage(actor)
         if self.REMOVE_ON_COLLIDE:
-            Game.remove(self)
+            self.game.remove(self)
 
     def on_damage(self, inflictor):
         pass

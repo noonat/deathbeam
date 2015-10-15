@@ -7,7 +7,6 @@ from pyglet.window.key import LEFT, RIGHT, SPACE
 import defs
 from actors import Actor, Sound, register_actor
 from aliens import Mothership
-from game import Draw, Game, Score
 from particles import (
     JetpackFlame, JetpackIgniteSmoke, JetpackSmoke, RocketFlame,
     RocketFlameOrange, RocketFlameRed, RocketSmoke, Text)
@@ -34,14 +33,15 @@ class Civilian(Actor):
         self.player = None
 
     def attach(self, anchor):
-        Actor.attach(self, anchor)
+        super(Civilian, self).attach(anchor)
         self.COLLIDE_WITH_ACTORS = True
         if isinstance(anchor, Player):
             self.player = anchor
-            Score.add('points', self.POINTS / 10, why=self.NAME.upper())
+            self.game.score.add('points', self.POINTS / 10,
+                                why=self.NAME.upper())
 
     def detach(self):
-        Actor.detach(self)
+        super(Civilian, self).detach()
         if self.player:
             self.player.on_detached(self)
             self.player = None
@@ -59,7 +59,7 @@ class Civilian(Actor):
         if not self.anchor and isinstance(actor, Player):
             self.attach(actor)
         else:
-            return Actor.on_collide(self, actor, collision)
+            return super(Civilian, self).on_collide(actor, collision)
 
     def on_damage(self, actor):
         if self.player or isinstance(actor, Mothership):
@@ -68,14 +68,14 @@ class Civilian(Actor):
             self.COLLIDE_WITH_ACTORS = False
             self.COLOR = (0, 0, 0, 1)
             self.dead = True
-            Score.add(Score.HUMANS_LOST, 1)
-            text = Game.spawn(Text(random.choice(self.DEATH_TEXT)))
+            self.game.score.add(self.game.score.HUMANS_LOST, 1)
+            text = self.game.spawn(Text, random.choice(self.DEATH_TEXT))
             text.attach(self)
 
     def update(self, dt):
-        if self.x < Game.mothership.x and not self.dead:
-            self.on_damage(Game.mothership)
-        Actor.update(self, dt)
+        if self.x < self.game.mothership.x and not self.dead:
+            self.on_damage(self.game.mothership)
+        super(Civilian, self).update(dt)
         if self.platform:
             # FIXME: need to clamp to right side as well ... keep them on it
             if self.x < self.platform.x:
@@ -120,7 +120,6 @@ class Player(Actor):
         self.civilians = []
         self.jetpack_ignite_time = None
         self.jetpack_ignited = False
-        # self.jetpack_sound = Sound(self, 'jetpack.wav', volume=0.2)
         self.space_pressed = False
         self.has_jetpack = True
         self.has_rocket = False
@@ -133,7 +132,7 @@ class Player(Actor):
         if self.has_rocket:
             old_y = self.y
             self.y += Rocket.HEIGHT
-        Actor.draw(self)
+        super(Player, self).draw()
         if self.has_rocket:
             self.y = old_y
 
@@ -161,23 +160,22 @@ class Player(Actor):
                     self.civilians[i].anchor = self.civilians[i - 1]
 
     def on_jetpack_ignited(self):
-        # self.jetpack_sound.play()
         if self.has_rocket:
-            flame = RocketFlame
-            smoke = RocketSmoke
+            flame_cls = RocketFlame
+            smoke_cls = RocketSmoke
         else:
-            flame = JetpackFlame
-            smoke = JetpackIgniteSmoke
-        Game.spawn(flame(self.x, self.y, Game.time))
+            flame_cls = JetpackFlame
+            smoke_cls = JetpackIgniteSmoke
+        self.game.spawn(flame_cls, self.x, self.y, self.game.time)
         for i in range(self.JETPACK_IGNITE_PARTICLES):
-            p = Game.spawn(smoke(self.x, self.y, Game.time))
+            p = self.game.spawn(smoke_cls, self.x, self.y, self.game.time)
             p.vel_x = random.uniform(-20, -60) * math.copysign(1, self.vel_x)
             p.vel_y = random.uniform(-20, -60)
 
     def update(self, dt):
         if (self.has_jetpack and not self.jetpack_ignited and
                 self.jetpack_ignite_time):
-            if self.jetpack_ignite_time <= Game.time:
+            if self.jetpack_ignite_time <= self.game.time:
                 self.jetpack_ignited = True
                 self.on_jetpack_ignited()
         # figure out how hard to push
@@ -197,16 +195,16 @@ class Player(Actor):
             push_y = self.PUSH_ROCKET
         # figure out where they want to go
         px, py = 0, 0
-        if Game.keys[RIGHT]:
+        if self.game.keys[RIGHT]:
             px += push_x
-        if Game.keys[LEFT]:
+        if self.game.keys[LEFT]:
             px -= push_x
         if self.has_rocket:
             px = 0
-        if Game.keys[SPACE]:
+        if self.game.keys[SPACE]:
             if self.has_jetpack and not self.jetpack_ignite_time:
                 self.jetpack_ignite_time = (
-                    Game.time + self.JETPACK_IGNITE_DELAY)
+                    self.game.time + self.JETPACK_IGNITE_DELAY)
             self.space_pressed = True
             py += push_y
         else:
@@ -214,17 +212,19 @@ class Player(Actor):
             self.jetpack_ignite_time = None
         if self.jetpack_ignited:
             if self.has_rocket:
-                flames = [RocketFlame, RocketFlameOrange, RocketFlameRed]
-                smoke = RocketSmoke
+                flame_classes = [RocketFlame, RocketFlameOrange,
+                                 RocketFlameRed]
+                smoke_cls = RocketSmoke
             else:
-                flames = [JetpackFlame]
-                smoke = JetpackSmoke
-            for i, flame in enumerate(flames):
-                Game.spawn(flame(self.x, self.y, Game.time + 0.05 * i))
-            Game.spawn(smoke(self.x, self.y, Game.time + 0.1))
+                flame_classes = [JetpackFlame]
+                smoke_cls = JetpackSmoke
+            for i, flame_cls in enumerate(flame_classes):
+                self.game.spawn(flame_cls, self.x, self.y,
+                                self.game.time + 0.05 * i)
+            self.game.spawn(smoke_cls, self.x, self.y, self.game.time + 0.1)
         # push em
         self.push(px, py)
-        Actor.update(self, dt)
+        super(Player, self).update(dt)
         if defs.SOUND:
             pyglet.media.listener.position = (self.x, self.y, 0)
 
@@ -249,7 +249,7 @@ class RescuePlatform(Actor):
         super(RescuePlatform, self).__init__(*args, **kwargs)
         self.rescue_actors = []
         self.rescue_time = None
-        self.cell = Game.world.map.get_for_xy(self.x, self.y)
+        self.cell = self.game.world.map.get_for_xy(self.x, self.y)
         if self.cell['platform']:
             self.cell = None
             return
@@ -263,13 +263,13 @@ class RescuePlatform(Actor):
         c = self.cell.neighbors.right
         if c and c.type == defs.CELL_HUMAN_RESCUE:
             if c['platform']:
-                Game.remove(c.platform)
+                self.game.remove(c.platform)
             c['platform'] = self
             self.cell2 = c
             self.WIDTH += self.cell2.width
         else:
             self.cell2 = None
-        self.label = Draw.create_label(6)
+        self.label = self.game.draw.create_label(6)
         self.label.anchor_x = 'center'
         self.activate_sound = Sound(self, 'rescue_platform_activate.wav')
         self.ping_sound = Sound(self, 'rescue_platform_ping.wav')
@@ -282,53 +282,54 @@ class RescuePlatform(Actor):
         if self.rescue_time:
             r, g, b, a = self.RESCUE_COLOR
             a += (self.RESCUE_COLOR_FADE *
-                  math.sin(Game.time * self.RESCUE_COLOR_FADE_SPEED))
+                  math.sin(self.game.time * self.RESCUE_COLOR_FADE_SPEED))
         else:
             r, g, b, a = self.COLOR
-        Draw.quad(self.x, self.y, self.WIDTH, self.HEIGHT, self.Z,
-                  c1=(r, g, b, 0), c3=(r, g, b, a))
+        self.game.draw.quad(self.x, self.y, self.WIDTH, self.HEIGHT, self.Z,
+                            c1=(r, g, b, 0), c3=(r, g, b, a))
         if self.rescue_time:
-            time = int(self.rescue_time - Game.time)
+            time = int(self.rescue_time - self.game.time)
             if time < 0:
                 time = 0
             if time == 0:
                 self.label.text = 'teleporting'
             else:
                 self.label.text = 'teleporting in %d' % time
-            Draw.label(self.label, self.x + self.WIDTH * 0.5,
-                       self.y + self.LABEL_Y)
+            self.game.draw.label(self.label, self.x + self.WIDTH * 0.5,
+                                 self.y + self.LABEL_Y)
 
     def rescue(self, actor):
         self.rescue_actors.append(actor)
         if not self.rescue_time:
-            self.rescue_time = Game.time + self.RESCUE_DELAY
+            self.rescue_time = self.game.time + self.RESCUE_DELAY
             self.activate_sound.play()
-            self.next_ping_sound = Game.time + 1.0
+            self.next_ping_sound = self.game.time + 1.0
 
     def update(self, dt):
         if not self.cell:
-            Game.remove(self)
+            self.game.remove(self)
             return
-        Actor.update(self, dt)
+        super(RescuePlatform, self).update(dt)
         if self.rescue_time:
-            if self.rescue_time <= Game.time:
+            if self.rescue_time <= self.game.time:
                 self.teleport_sound.play()
                 a = [act for act in set(self.rescue_actors) if not act.dead]
                 n = len(a)
-                Score.add(Score.HUMANS_SAVED, n)
+                self.game.score.add(self.game.score.HUMANS_SAVED, n)
                 points = 0
                 for actor in a:
                     points += actor.POINTS
-                    Game.remove(actor)
+                    self.game.remove(actor)
                 if n > 5:
                     points *= 100
                 elif n > 3:
                     points *= 50
                 elif n > 1:
                     points *= 10
-                Score.add(Score.POINTS, points, '%dx RESCUE!' % n)
+                self.game.score.add(self.game.score.POINTS, points,
+                                    '%dx RESCUE!' % n)
                 self.rescue_time = None
-            elif self.next_ping_sound <= Game.time:
+            elif self.next_ping_sound <= self.game.time:
                 self.ping_sound.play()
                 self.next_ping_sound += 1.0
 
@@ -353,7 +354,7 @@ class Rocket(Actor):
             self.x = self.anchor.x + self.anchor.WIDTH * 0.5 - self.WIDTH * 0.5
             self.y = self.anchor.y
         else:
-            Actor.update(self, dt)
+            super(Rocket, self).update(dt)
 
 
 @register_actor
@@ -368,7 +369,7 @@ class RocketPad(Actor):
 
     def __init__(self, *args, **kwargs):
         super(RocketPad, self).__init__(*args, **kwargs)
-        self.cell = Game.world.map.get_for_xy(self.x, self.y)
+        self.cell = self.game.world.map.get_for_xy(self.x, self.y)
         if self.cell['pad']:
             self.cell = None
             return
@@ -382,7 +383,7 @@ class RocketPad(Actor):
         c = self.cell.neighbors.right
         if c and c.type == defs.CELL_HUMAN_ROCKET_PAD:
             if c['pad']:
-                Game.remove(c.platform)
+                self.game.remove(c.platform)
             c['pad'] = self
             self.cell2 = c
             self.WIDTH += self.cell2.width
@@ -392,14 +393,14 @@ class RocketPad(Actor):
     def draw(self):
         if not self.cell:
             return
-        f = (math.sin(Game.time) + 1) * 0.5
+        f = (math.sin(self.game.time) + 1) * 0.5
         f = f * f
         r, g, b, a = self.COLOR
-        Draw.quad(self.x, self.y, self.WIDTH, self.HEIGHT, self.Z,
-                  c1=(r, g, b, 0), c3=(r, g, b, 0.1 + 0.3 * f))
+        self.game.draw.quad(self.x, self.y, self.WIDTH, self.HEIGHT, self.Z,
+                            c1=(r, g, b, 0), c3=(r, g, b, 0.1 + 0.3 * f))
 
     def update(self, dt):
         if not self.cell:
-            Game.remove(self)
+            self.game.remove(self)
             return
-        Actor.update(self, dt)
+        super(RocketPad, self).update(dt)

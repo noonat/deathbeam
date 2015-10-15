@@ -3,7 +3,22 @@ import pyglet
 
 import defs
 import helpers
-from game import Game, Draw
+
+
+_worlds = {}
+
+
+def add(name, tilesets, maps):
+    global _worlds
+    _worlds[name] = World(name, tilesets, maps)
+
+
+def load(game, name):
+    global _worlds
+    world = _worlds.get(name)
+    if world:
+        world.load(game)
+    return world
 
 
 class Map(object):
@@ -15,17 +30,18 @@ class Map(object):
             setattr(self, kw, kwargs[kw])
 
     def draw(self):
+        game = self.world.game
         min_x, min_y = self.get_cxcy_for_xy(
-            Game.camera_x - self.tileset.tile_width,
-            Game.camera_y - self.tileset.tile_height)
+            game.camera_x - self.tileset.tile_width,
+            game.camera_y - self.tileset.tile_height)
         max_x, max_y = self.get_cxcy_for_xy(
-            Game.camera_x + Game.camera_width + self.tileset.tile_width,
-            Game.camera_y + Game.camera_height + self.tileset.tile_height)
+            game.camera_x + game.camera_width + self.tileset.tile_width,
+            game.camera_y + game.camera_height + self.tileset.tile_height)
         for y in range(min_y, max_y + 1):
             for x in range(min_x, max_x + 1):
                 c = self.cells[y][x]
                 if c.tile:
-                    c.draw()
+                    c.draw(game)
 
     def get_cxcy_for_xy(self, x, y):
         x = int(x / self.tileset.tile_width)
@@ -72,7 +88,7 @@ class Map(object):
                     tile = None
                 cx = x
                 cy = self.height - y - 1
-                cell = MapCell(cx, cy,
+                cell = MapCell(self, cx, cy,
                                self.tileset.tile_width * cx,
                                self.tileset.tile_height * cy,
                                self.tileset.tile_width,
@@ -97,7 +113,8 @@ class Map(object):
 
 class MapCell(object):
 
-    def __init__(self, cx, cy, x, y, width, height, tile, type, bounds):
+    def __init__(self, map, cx, cy, x, y, width, height, tile, type, bounds):
+        self.map = map
         self.cx = cx
         self.cy = cy
         self.x = x  # x is the left
@@ -112,7 +129,7 @@ class MapCell(object):
         self.edgeTop = self.bounds & defs.CELL_EDGE_TOP and True or False
         self.edgeBottom = self.bounds & defs.CELL_EDGE_BOTTOM and True or False
         self.edgeSlope = self.bounds & defs.CELL_EDGE_SLOPE and True or False
-        self.neighbors = MapCellNeighbors(self.cx, self.cy)
+        self.neighbors = MapCellNeighbors(self, self.cx, self.cy)
         self.metadata = {}
 
     def __delitem__(self, name):
@@ -130,13 +147,13 @@ class MapCell(object):
             (self.cx, self.cy, self.x, self.y, self.width, self.height,
              self.bounds, self.type))
 
-    def draw(self, color=None):
+    def draw(self, game, color=None):
         if not self.type and not (self.bounds & defs.CELL_EDGE_SLOPE):
-            Draw.quad(self.x, self.y, self.width, self.height,
-                      defs.Z_MAP_BACKGROUND, (0, 0, 0, 1))
+            game.draw.quad(self.x, self.y, self.width, self.height,
+                           defs.Z_MAP_BACKGROUND, (0, 0, 0, 1))
         else:
-            Draw.callback(self.tile.blit, self.x, self.y,
-                          z=defs.Z_MAP_BACKGROUND)
+            game.draw.callback(self.tile.blit, self.x, self.y,
+                               z=defs.Z_MAP_BACKGROUND)
 
     def trace(self, old_cell, old_x, old_y, new_x, new_y):
         hit = hit_ground = False
@@ -170,24 +187,27 @@ class MapCell(object):
 
 
 class MapCellNeighbors(object):
-    def __init__(self, cx, cy):
+
+    def __init__(self, cell, cx, cy):
+        self.cell = cell
         self.cx = cx
         self.cy = cy
 
-    def __getattribute__(self, name):
-        cx = object.__getattribute__(self, 'cx')
-        cy = object.__getattribute__(self, 'cy')
-        if name == 'top':
-            cy += 1
-        elif name == 'bottom':
-            cy -= 1
-        elif name == 'left':
-            cx -= 1
-        elif name == 'right':
-            cx += 1
-        else:
-            raise AttributeError
-        return Game.world.map.get_for_cxcy(cx, cy)
+    @property
+    def top(self):
+        return self.cell.map.get_for_cxcy(self.cx, self.cy + 1)
+
+    @property
+    def bottom(self):
+        return self.cell.map.get_for_cxcy(self.cx, self.cy - 1)
+
+    @property
+    def left(self):
+        return self.cell.map.get_for_cxcy(self.cx - 1, self.cy)
+
+    @property
+    def right(self):
+        return self.cell.map.get_for_cxcy(self.cx + 1, self.cy)
 
 
 class TileSet(object):
@@ -223,9 +243,8 @@ class World(object):
         self.maps = maps
         self.tilesets = tilesets
 
-    def load(self):
-        # if self.loaded:
-        #    return
+    def load(self, game):
+        self.game = game
         print 'loading world:', self.name
         for tileset in self.tilesets.itervalues():
             tileset.load(self)
@@ -236,19 +255,3 @@ class World(object):
     def load_map(self, name):
         self.map = self.maps.get(name)
         return self.map
-
-
-_worlds = {}
-
-
-def add(name, tilesets, maps):
-    global _worlds
-    _worlds[name] = World(name, tilesets, maps)
-
-
-def load(name):
-    global _worlds
-    world = _worlds.get(name)
-    if world:
-        world.load()
-    return world

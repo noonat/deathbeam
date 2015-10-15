@@ -2,7 +2,6 @@ import math
 
 import defs
 from actors import Actor, AmbientSound, Sound, register_actor
-from game import Game, Draw
 from particles import TurretBullet
 
 
@@ -37,11 +36,11 @@ class Mothership(Actor):
 
     def draw(self):
         # ship
-        Draw.quad(self.x - self.WIDTH / 2, self.y, self.WIDTH, self.HEIGHT,
-                  self.Z, (0, 0, 0, 1))
+        self.game.draw.quad(self.x - self.WIDTH / 2, self.y, self.WIDTH,
+                            self.HEIGHT, self.Z, (0, 0, 0, 1))
 
         # beam
-        while Game.time >= self.beam_rotate_time:
+        while self.game.time >= self.beam_rotate_time:
             self.beam_rotate = (self.beam_rotate + 1) % self.BEAM_COUNT
             self.beam_rotate_time += self.BEAM_ROTATE_TIME
         bw = self.BEAM_WIDTH * self.BEAM_COUNT
@@ -49,13 +48,14 @@ class Mothership(Actor):
         for i in range(self.BEAM_COUNT):
             color = (self.BEAM_COLORS[(self.beam_rotate + i) %
                      len(self.BEAM_COLORS)])
-            Draw.quad(bx, 0, self.BEAM_WIDTH, self.y, self.BEAM_Z, color)
+            self.game.draw.quad(bx, 0, self.BEAM_WIDTH, self.y, self.BEAM_Z,
+                                color)
             bx += self.BEAM_WIDTH
 
     def update(self, dt):
         self.x += self.SPEED * dt
         for s in self.beam_sounds:
-            s.update((self.x, Game.player.y, 0))
+            s.update((self.x, self.game.player.y, 0))
 
 
 @register_actor
@@ -75,27 +75,27 @@ class Turret(Actor):
         super(Turret, self).__init__(*args, **kwargs)
         self.fire_sound = Sound(self, 'turret_fire.wav')
         self.volley_rounds = 0
-        self.volley_time = Game.time + self.VOLLEY_DELAY
+        self.volley_time = self.game.time + self.VOLLEY_DELAY
 
     def fire(self, normal_x, normal_y, spawn_time):
         self.fire_sound.play()
-        bullet = Game.spawn(TurretBullet(self.x, self.y, spawn_time))
+        bullet = self.game.spawn(TurretBullet, self.x, self.y, spawn_time)
         bullet.vel_x = normal_x * self.VOLLEY_ROUNDS_SPEED
         bullet.vel_y = normal_y * self.VOLLEY_ROUNDS_SPEED
 
     def update(self, dt):
-        Actor.update(self, dt)
-        if self.volley_time <= Game.time:
+        super(Turret, self).update(dt)
+        if self.volley_time <= self.game.time:
             if self.volley_rounds >= self.VOLLEY_ROUNDS:
-                self.volley_time = Game.time + self.VOLLEY_DELAY
+                self.volley_time = self.game.time + self.VOLLEY_DELAY
                 self.volley_rounds = 0
             else:
-                self.volley_time = Game.time + self.VOLLEY_ROUNDS_DELAY
+                self.volley_time = self.game.time + self.VOLLEY_ROUNDS_DELAY
                 self.volley_rounds += 1
-                dx = Game.player.x - self.x
-                dy = Game.player.y - self.y
+                dx = self.game.player.x - self.x
+                dy = self.game.player.y - self.y
                 length = math.sqrt(dx*dx + dy*dy)
                 if length and length <= self.VOLLEY_RANGE:
                     dx /= length
                     dy /= length
-                    self.fire(dx, dy, Game.time)
+                    self.fire(dx, dy, self.game.time)
