@@ -1,0 +1,273 @@
+import math, random
+from pyglet import gl
+from pyglet.window import key
+
+from game import Game
+import defs, helpers, worlds
+
+class Actor(object):
+    ATTACHED_DISTANCE = 4
+    CELL_TYPE = None
+    COLLIDE_WITH_ACTORS = True
+    COLLIDE_WITH_WORLD = True
+    COLOR = (1, 1, 1, 1)
+    DAMAGE = 0.0
+    DAMAGE_ON_COLLIDE = False
+    DRAG = 0.9
+    GRAVITY = 1.5
+    MAX_VELOCITY_X = 64
+    MAX_VELOCITY_Y = 384
+    PHYSICS = defs.PHYSICS_VELOCITY
+    REMOVE_ON_COLLIDE = False
+    WIDTH = 3
+    HEIGHT = 3
+    Z = defs.Z_ACTOR_BACKGROUND
+
+    def __init__(self, x=0.0, y=0.0, image=None):
+        self.x = x
+        self.y = y
+        self.old_x = x
+        self.old_y = y
+        self.vel_x = 0.0
+        self.vel_y = 0.0
+        self.anchor = None
+        self.cell = None
+        self.image = image
+        self.on_ground = False
+
+    def attach(self, actor):
+        if self.anchor:
+            if self.anchor is actor:
+                return
+            self.detach()
+        self.anchor = actor
+        self.anchor.on_attached(self)
+        self._old_physics = self.PHYSICS
+        self.PHYSICS = defs.PHYSICS_ATTACHED
+
+    def attach_text(self, text):
+        text = Game.spawn(particles.Text(text))
+        text.attach(self)
+        return text
+
+    def detach(self):
+        if not self.anchor:
+            return
+        self.anchor.on_detached(self)
+        self.anchor = None
+        self.PHYSICS = self._old_physics
+        self._old_physics = None
+
+    def _collide_with_actors(self):
+        if isinstance(self.COLLIDE_WITH_ACTORS, list):
+            for cell_type in self.COLLIDE_WITH_ACTORS:
+                if cell_type not in Game.actors_by_type:
+                    continue
+                for actor in Game.actors_by_type[cell_type]:
+                    if actor is self:
+                        continue
+                    if not actor.COLLIDE_WITH_ACTORS:
+                        continue
+                    if self.x > actor.x + actor.WIDTH or self.x + self.WIDTH < actor.x:
+                        continue
+                    if self.y > actor.y + actor.HEIGHT or self.y + self.HEIGHT < actor.y:
+                        continue
+                    if isinstance(actor.COLLIDE_WITH_ACTORS, list) and not self.CELL_TYPE in actor.COLLIDE_WITH_ACTORS:
+                        continue
+                    self.on_collide(actor, True)
+                    actor.on_collide(self, True)
+        else:
+            for actor in Game.actors:
+                if actor is self:
+                    continue
+                if not actor.COLLIDE_WITH_ACTORS:
+                    continue
+                if self.x > actor.x + actor.WIDTH or self.x + self.WIDTH < actor.x:
+                    continue
+                if self.y > actor.y + actor.HEIGHT or self.y + self.HEIGHT < actor.y:
+                    continue
+                if isinstance(actor.COLLIDE_WITH_ACTORS, list) and not self.CELL_TYPE in actor.COLLIDE_WITH_ACTORS:
+                    continue
+                self.on_collide(actor, True)
+                actor.on_collide(self, True)
+
+    def _collide_with_world(self):
+        self.x, self.y, hit_1, hit_ground_1, cell = Game.world.map.trace(self.old_x, self.old_y, self.x, self.y)
+        self.x, self.y, hit_2, hit_ground_2, cell = Game.world.map.trace(self.old_x, self.old_y, self.x, self.y)
+        if not self.on_ground and (hit_ground_1 or hit_ground_2):
+            self.on_ground = True
+        cell = Game.world.map.get_for_xy(self.x, self.y)
+        if self.cell is not cell:
+            self.cell = cell
+            if cell and cell.type:
+                self.on_cell(cell)
+        if hit_1 or hit_2:
+            if self.REMOVE_ON_COLLIDE:
+                Game.remove(self)
+
+    def draw(self):
+        x = self.x
+        y = self.y
+        #if self._image:
+        #    self._image.blit(x, y)
+        #else:
+        Draw.quad(x, y, self.WIDTH, self.HEIGHT, self.Z, self.COLOR)
+
+    def image():
+        def fget(self):
+            return self._image
+        def fset(self, img):
+            if isinstance(img, str) or isinstance(img, unicode):
+                img = pyglet.image.load(img)
+                helpers.set_nearest(img)
+            self._image = img
+            if self._image:
+                helpers.set_anchor(self._image, 0.5, 0.0)
+            return self._image
+        def fdel(self):
+            del self._image
+        return locals()
+    image = property(**image())
+
+    def on_attached(self, actor):
+        pass
+
+    def on_cell(self, cell):
+        pass
+
+    def on_collide(self, actor, collision):
+        if actor.DAMAGE_ON_COLLIDE:
+            self.on_damage(actor)
+        if self.REMOVE_ON_COLLIDE:
+            Game.remove(self)
+
+    def on_damage(self, inflictor):
+        pass
+
+    def on_detached(self, actor):
+        pass
+
+    def on_remove(self):
+        pass
+
+    def push(self, x, y):
+        self.vel_x = helpers.abs_clamp(self.vel_x + x, self.MAX_VELOCITY_X)
+        self.vel_y = helpers.abs_clamp(self.vel_y + y, self.MAX_VELOCITY_Y)
+        if self.vel_y > 0:
+            self.on_ground = False
+
+    def update(self, dt):
+        if self.vel_y > 0:
+            self.on_ground = False
+        # physics
+        if self.PHYSICS == defs.PHYSICS_VELOCITY:
+            self._update_velocity(dt)
+        elif self.PHYSICS == defs.PHYSICS_ATTACHED:
+            self._update_attached(dt)
+        # collision
+        if self.x != self.old_x or self.y != self.old_y:
+            if self.COLLIDE_WITH_WORLD:
+                self._collide_with_world()
+            if self.COLLIDE_WITH_ACTORS:
+                self._collide_with_actors()
+        # attachment physics need correction after collision
+        if self.PHYSICS == defs.PHYSICS_ATTACHED:
+            self._update_attached_distance(dt)
+        self.old_x = self.x
+        self.old_y = self.y
+
+    def _update_attached(self, dt):
+        if self.anchor:
+            self.y -= self.GRAVITY * 0.5
+
+    def _update_attached_distance(self, dt):
+        if self.anchor:
+            dx = self.anchor.x - self.x
+            dy = self.anchor.y - self.y
+            length = math.sqrt(dx*dx + dy*dy)
+            if length > self.ATTACHED_DISTANCE:
+                dx /= length
+                dy /= length
+                self.x += dx * (length - self.ATTACHED_DISTANCE)
+                self.y += dy * (length - self.ATTACHED_DISTANCE)
+
+    def _update_velocity(self, dt):
+        self.x += self.vel_x * dt
+        self.y += self.vel_y * dt
+        self.y -= self.GRAVITY
+        self.vel_x *= self.DRAG
+        self.vel_y *= self.DRAG
+        if abs(self.vel_x) < 0.001:
+            self.vel_x = 0;
+        if abs(self.vel_y) < 0.001:
+            self.vel_y = 0
+
+class Sound(object):
+    cache = {}
+
+    def __init__(self, actor, filename, min_distance=10.0, pitch=1.0, volume=1.0):
+        if not defs.SOUND:
+            return
+        if not filename in Sound.cache:
+            Sound.cache[filename] = pyglet.media.load(filename, streaming=False)
+        self.sound = Sound.cache[filename]
+        self.actor = actor
+        self.min_distance = min_distance
+        self.pitch = pitch
+        self.volume = volume
+
+    def play(self):
+        if not defs.SOUND:
+            return
+        m = self.sound.play()
+        m.min_distance = self.min_distance
+        m.pitch = self.pitch
+        m.position = (self.actor.x, self.actor.y, 0)
+        m.volume = self.volume
+
+class AmbientSound(Sound):
+    sounds = []
+
+    def __init__(self, actor, filename, auto_update=True, min_distance=10.0,
+                 pitch=1.0, volume=1.0):
+        if not defs.SOUND:
+            return
+        Sound.__init__(self, actor, filename, min_distance, pitch, volume)
+        AmbientSound.sounds.append(self)
+        self.auto_update = auto_update
+        self.player = pyglet.media.Player()
+        self.player.eos_action = pyglet.media.Player.EOS_LOOP
+        self.player.min_distance = min_distance
+        self.player.pitch = pitch
+        self.player.volume = volume
+        self.update()
+        self.player.queue(self.sound)
+        self.player.play()
+
+    @classmethod
+    def stop_all(self):
+        if not defs.SOUND:
+            return
+        for sound in self.sounds:
+            sound.player.pause()
+            del sound
+        self.sounds = []
+
+    def update(self, pos=None):
+        if not defs.SOUND:
+            return
+        if pos:
+            self.player.position = pos
+        else:
+            self.player.position = (self.actor.x, self.actor.y, 0)
+
+    @classmethod
+    def update_all(self):
+        if not defs.SOUND:
+            return
+        for sound in self.sounds:
+            if sound.auto_update:
+                sound.update()
+
+from aliens import *
+from humans import *

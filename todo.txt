@@ -1,0 +1,42 @@
+LD:
+
+polish:
+	rescue:
+		pending points text
+	rescue drop:
+		earned points text
+
+points when civilian dropped on platform
+	combo points for multiple drops
+
+POST-LD:
+
+health for player
+	three hits = death
+	one hit =
+		temporary invulnerable
+		flashing to show damage
+			lose jetpack while flashing
+		drop civilians
+		respawn at nearest spawn
+
+game over
+	three deaths = lose
+	no civilians remaining = win
+
+add souls
+	+1 soul for each civilian rescued
+	+1 soul for each soldier rescued
+
+add purchaseables
+	soldiers
+		laser soldier = 1 soul
+			shoots bolts in a straight line, fast reload
+		bomb soldier = 2 souls
+			drops a bomb, explodes on collide w/ world or actor, normal reload
+		rocket soldier = 3 souls
+			fires seeking rocket, slow reload
+	items
+		disruptor = 4 souls
+			when beam hits it, disrupts beam and slows down mothership
+
