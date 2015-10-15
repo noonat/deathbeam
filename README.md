@@ -6,6 +6,9 @@ inspired by [Defender] and [Dino Run].
 
 The game is written in Python 2.7 using [Pyglet]. I used [Tile Studio] for map.
 
+I didn't have time to add a menu or help screen to the game during Ludum Dare,
+but you can read the instructions here: https://phuce.com/2009/04/27/deathbeam/
+
 [Ludum Dare 14]: http://ludumdare.com/
 [Defender]: http://en.wikipedia.org/wiki/Defender_(arcade_game)
 [Dino Run]: http://www.pixeljam.com/dinorun
