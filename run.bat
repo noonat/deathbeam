@@ -1,2 +1,2 @@
-@del *.pyc
-@python -OO deathbeam.py
+@del src\*.pyc
+@python -OO src\deathbeam.py

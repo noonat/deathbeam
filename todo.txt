@@ -39,4 +39,3 @@ add purchaseables
 	items
 		disruptor = 4 souls
 			when beam hits it, disrupts beam and slows down mothership
-
