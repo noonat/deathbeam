@@ -90,9 +90,10 @@ class Game(object):
         self.world.load_map('test_map_horiz')
         for cls in iter_registered_actors():
             cell_type = cls.CELL_TYPE
-            if cell_type:
-                for cell in self.world.map.get_for_type(cell_type):
-                    self.spawn(cls, x=cell.x, y=cell.y)
+            if not cell_type:
+                continue
+            for cell in self.world.map.get_for_type(cell_type):
+                self.spawn(cls, x=cell.x, y=cell.y)
 
         self.player = self.actors_by_type[defs.CELL_HUMAN_PLAYER][0]
         self.mothership = self.actors_by_type[defs.CELL_ALIEN_MOTHERSHIP][0]
@@ -193,9 +194,9 @@ class Game(object):
         actor = actor_cls(self, *args, **kwargs)
         if isinstance(actor, Particle):
             self.particles.append(actor)
-        else:
-            self.actors.append(actor)
-            if actor.CELL_TYPE not in self.actors_by_type:
-                self.actors_by_type[actor.CELL_TYPE] = []
-            self.actors_by_type[actor.CELL_TYPE].append(actor)
+            return actor
+        self.actors.append(actor)
+        if actor.CELL_TYPE not in self.actors_by_type:
+            self.actors_by_type[actor.CELL_TYPE] = []
+        self.actors_by_type[actor.CELL_TYPE].append(actor)
         return actor

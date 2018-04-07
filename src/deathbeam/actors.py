@@ -82,38 +82,27 @@ class Actor(object):
                 if cell_type not in self.game.actors_by_type:
                     continue
                 for actor in self.game.actors_by_type[cell_type]:
-                    if actor is self:
-                        continue
-                    if not actor.COLLIDE_WITH_ACTORS:
-                        continue
-                    if (self.x > actor.x + actor.WIDTH or
-                            self.x + self.WIDTH < actor.x):
-                        continue
-                    if (self.y > actor.y + actor.HEIGHT or
-                            self.y + self.HEIGHT < actor.y):
-                        continue
-                    if (isinstance(actor.COLLIDE_WITH_ACTORS, list) and
-                            self.CELL_TYPE not in actor.COLLIDE_WITH_ACTORS):
-                        continue
-                    self.on_collide(actor, True)
-                    actor.on_collide(self, True)
+                    self._collide_with_actor(actor)
         else:
             for actor in self.game.actors:
-                if actor is self:
-                    continue
-                if not actor.COLLIDE_WITH_ACTORS:
-                    continue
-                if (self.x > actor.x + actor.WIDTH or
-                        self.x + self.WIDTH < actor.x):
-                    continue
-                if (self.y > actor.y + actor.HEIGHT or
-                        self.y + self.HEIGHT < actor.y):
-                    continue
-                if (isinstance(actor.COLLIDE_WITH_ACTORS, list) and
-                        self.CELL_TYPE not in actor.COLLIDE_WITH_ACTORS):
-                    continue
-                self.on_collide(actor, True)
-                actor.on_collide(self, True)
+                self._collide_with_actor(actor)
+
+    def _collide_with_actor(self, actor):
+        if actor is self:
+            return
+        if not actor.COLLIDE_WITH_ACTORS:
+            return
+        if (self.x > actor.x + actor.WIDTH or
+                self.x + self.WIDTH < actor.x):
+            return
+        if (self.y > actor.y + actor.HEIGHT or
+                self.y + self.HEIGHT < actor.y):
+            return
+        if (isinstance(actor.COLLIDE_WITH_ACTORS, list) and
+                self.CELL_TYPE not in actor.COLLIDE_WITH_ACTORS):
+            return
+        self.on_collide(actor, True)
+        actor.on_collide(self, True)
 
     def _collide_with_world(self):
         self.x, self.y, hit_1, hit_ground_1, cell = self.game.world.map.trace(
@@ -127,9 +116,8 @@ class Actor(object):
             self.cell = cell
             if cell and cell.type:
                 self.on_cell(cell)
-        if hit_1 or hit_2:
-            if self.REMOVE_ON_COLLIDE:
-                self.game.remove(self)
+        if (hit_1 or hit_2) and self.REMOVE_ON_COLLIDE:
+            self.game.remove(self)
 
     def draw(self):
         x = self.x
@@ -206,15 +194,16 @@ class Actor(object):
             self.y -= self.GRAVITY * 0.5
 
     def _update_attached_distance(self, dt):
-        if self.anchor:
-            dx = self.anchor.x - self.x
-            dy = self.anchor.y - self.y
-            length = math.sqrt(dx*dx + dy*dy)
-            if length > self.ATTACHED_DISTANCE:
-                dx /= length
-                dy /= length
-                self.x += dx * (length - self.ATTACHED_DISTANCE)
-                self.y += dy * (length - self.ATTACHED_DISTANCE)
+        if not self.anchor:
+            return
+        dx = self.anchor.x - self.x
+        dy = self.anchor.y - self.y
+        length = math.sqrt(dx*dx + dy*dy)
+        if length > self.ATTACHED_DISTANCE:
+            dx /= length
+            dy /= length
+            self.x += dx * (length - self.ATTACHED_DISTANCE)
+            self.y += dy * (length - self.ATTACHED_DISTANCE)
 
     def _update_velocity(self, dt):
         self.x += self.vel_x * dt

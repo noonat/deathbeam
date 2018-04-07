@@ -87,17 +87,21 @@ class Turret(Actor):
 
     def update(self, dt):
         super().update(dt)
-        if self.volley_time <= self.game.time:
-            if self.volley_rounds >= self.VOLLEY_ROUNDS:
-                self.volley_time = self.game.time + self.VOLLEY_DELAY
-                self.volley_rounds = 0
-            else:
-                self.volley_time = self.game.time + self.VOLLEY_ROUNDS_DELAY
-                self.volley_rounds += 1
-                dx = self.game.player.x - self.x
-                dy = self.game.player.y - self.y
-                length = math.sqrt(dx*dx + dy*dy)
-                if length and length <= self.VOLLEY_RANGE:
-                    dx /= length
-                    dy /= length
-                    self.fire(dx, dy, self.game.time)
+        if self.volley_time > self.game.time:
+            # Still waiting before shoot the next bullet.
+            return
+        if self.volley_rounds >= self.VOLLEY_ROUNDS:
+            # The turret has shot enough rounds, so stop shooting and wait
+            # for a bit before firing again.
+            self.volley_time = self.game.time + self.VOLLEY_DELAY
+            self.volley_rounds = 0
+            return
+        self.volley_time = self.game.time + self.VOLLEY_ROUNDS_DELAY
+        self.volley_rounds += 1
+        dx = self.game.player.x - self.x
+        dy = self.game.player.y - self.y
+        length = math.sqrt(dx*dx + dy*dy)
+        if length and length <= self.VOLLEY_RANGE:
+            dx /= length
+            dy /= length
+            self.fire(dx, dy, self.game.time)

@@ -59,13 +59,13 @@ class AmbientSound(Sound):
         self.player.play()
 
     @classmethod
-    def stop_all(self):
+    def stop_all(cls):
         if not defs.SOUND:
             return
-        for sound in self.sounds:
+        for sound in cls.sounds:
             sound.player.pause()
             del sound
-        self.sounds = []
+        cls.sounds = []
 
     def update(self, pos=None):
         if not defs.SOUND:
@@ -76,9 +76,9 @@ class AmbientSound(Sound):
             self.player.position = (self.actor.x, self.actor.y, 0)
 
     @classmethod
-    def update_all(self):
+    def update_all(cls):
         if not defs.SOUND:
             return
-        for sound in self.sounds:
+        for sound in cls.sounds:
             if sound.auto_update:
                 sound.update()

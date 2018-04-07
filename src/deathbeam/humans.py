@@ -148,18 +148,19 @@ class Player(Actor):
             self.has_rocket = True
 
     def on_detached(self, actor):
-        if isinstance(actor, Civilian):
-            try:
-                i = self.civilians.index(actor)
-            except ValueError:
-                return
-            del self.civilians[i]
-            self.update_gravity()
-            if len(self.civilians) > i:
-                if i == 0:
-                    self.civilians[0].anchor = self
-                else:
-                    self.civilians[i].anchor = self.civilians[i - 1]
+        if not isinstance(actor, Civilian):
+            return
+        try:
+            i = self.civilians.index(actor)
+        except ValueError:
+            return
+        del self.civilians[i]
+        self.update_gravity()
+        if len(self.civilians) > i:
+            if i == 0:
+                self.civilians[0].anchor = self
+            else:
+                self.civilians[i].anchor = self.civilians[i - 1]
 
     def on_jetpack_ignited(self):
         if self.has_rocket:
@@ -312,28 +313,29 @@ class RescuePlatform(Actor):
             self.game.remove(self)
             return
         super().update(dt)
-        if self.rescue_time:
-            if self.rescue_time <= self.game.time:
-                self.teleport_sound.play()
-                a = [act for act in set(self.rescue_actors) if not act.dead]
-                n = len(a)
-                self.game.score.add(self.game.score.HUMANS_SAVED, n)
-                points = 0
-                for actor in a:
-                    points += actor.POINTS
-                    self.game.remove(actor)
-                if n > 5:
-                    points *= 100
-                elif n > 3:
-                    points *= 50
-                elif n > 1:
-                    points *= 10
-                self.game.score.add(self.game.score.POINTS, points,
-                                    '%dx RESCUE!' % n)
-                self.rescue_time = None
-            elif self.next_ping_sound <= self.game.time:
-                self.ping_sound.play()
-                self.next_ping_sound += 1.0
+        if not self.rescue_time:
+            return
+        if self.rescue_time <= self.game.time:
+            self.teleport_sound.play()
+            a = [act for act in set(self.rescue_actors) if not act.dead]
+            n = len(a)
+            self.game.score.add(self.game.score.HUMANS_SAVED, n)
+            points = 0
+            for actor in a:
+                points += actor.POINTS
+                self.game.remove(actor)
+            if n > 5:
+                points *= 100
+            elif n > 3:
+                points *= 50
+            elif n > 1:
+                points *= 10
+            self.game.score.add(self.game.score.POINTS, points,
+                                '%dx RESCUE!' % n)
+            self.rescue_time = None
+        elif self.next_ping_sound <= self.game.time:
+            self.ping_sound.play()
+            self.next_ping_sound += 1.0
 
 
 @register_actor
