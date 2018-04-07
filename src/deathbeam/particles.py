@@ -24,7 +24,7 @@ class Particle(Actor):
     Z = defs.Z_PARTICLE_BACKGROUND
 
     def __init__(self, game, x=0.0, y=0.0, spawn_time=None, **kwargs):
-        super(Particle, self).__init__(game, x, y)
+        super().__init__(game, x, y)
         self.spawn_time = spawn_time or self.game.time
         self.life_time = self.LIFE_TIME
         if self.life_time is not None:
@@ -65,7 +65,7 @@ class Particle(Actor):
         if self.death_time is not None and self.game.time > self.death_time:
             self.game.remove(self)
             return
-        return super(Particle, self).update(dt)
+        return super().update(dt)
 
 
 class Arrow(Particle):
@@ -184,7 +184,7 @@ class Text(Particle):
     LIFE_TIME = 2.0
 
     def __init__(self, game, text, *args, **kwargs):
-        super(Text, self).__init__(game, *args, **kwargs)
+        super().__init__(game, *args, **kwargs)
         self.label = self.game.draw.create_label(6)
         self.label.text = text
 

@@ -1,6 +1,7 @@
-#!/usr/bin/env python2.7
+#!/usr/bin/env python3.6
 
 from __future__ import absolute_import
+import logging
 import os
 import sys
 
@@ -11,5 +12,8 @@ from deathbeam.game import Game
 
 
 if __name__ == '__main__':
+    logging.basicConfig(format=('%(asctime)-15s\t%(levelname)s\t'
+                                '%(message)s (%(filename)s:%(lineno)d)'),
+                        level=logging.DEBUG)
     Game()
     pyglet.app.run()

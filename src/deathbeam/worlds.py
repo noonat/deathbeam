@@ -1,10 +1,12 @@
 from __future__ import absolute_import
+import logging
 import os
 import pyglet
 
 from . import defs, helpers
 
 
+logger = logging.getLogger('deathbeam')
 _worlds = {}
 
 
@@ -72,7 +74,7 @@ class Map(object):
         return self.cells[y][x]
 
     def load(self, world):
-        print 'loading %s.map:%s' % (world.name, self.name)
+        logging.info('loading %s.map:%s', world.name, self.name)
         if not self.loaded:
             self.world = world
             self.tileset = self.world.tilesets[self.tileset]
@@ -223,7 +225,7 @@ class TileSet(object):
         if self.loaded:
             return
         self.world = world
-        print 'loading %s.tileset:%s' % (world.name, self.name)
+        logging.info('loading %s.tileset:%s', world.name, self.name)
         self.image = pyglet.image.load(
             os.path.join(defs.ASSETS_DIR, self.name + '.png'))
         self.image_grid = pyglet.image.ImageGrid(self.image, self.length,
@@ -245,10 +247,10 @@ class World(object):
 
     def load(self, game):
         self.game = game
-        print 'loading world:', self.name
-        for tileset in self.tilesets.itervalues():
+        logging.info('loading world: %s', self.name)
+        for tileset in self.tilesets.values():
             tileset.load(self)
-        for map in self.maps.itervalues():
+        for map in self.maps.values():
             map.load(self)
         self.loaded = True
 

@@ -23,7 +23,8 @@ class Draw(object):
         gl.glScalef(defs.WINDOW_SCALE[0], defs.WINDOW_SCALE[1], 1)
         gl.glTranslatef(-self.game.camera_x, -self.game.camera_y, 0)
         # draw quads
-        keys = list(set(self.callbacks.keys() + self.quads.keys()))
+        keys = list(set(list(self.callbacks.keys()) +
+                        list(self.quads.keys())))
         keys.sort()
         for k in keys:
             gl.glBegin(gl.GL_QUADS)

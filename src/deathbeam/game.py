@@ -1,4 +1,5 @@
 from __future__ import absolute_import
+import logging
 import time
 
 import pyglet
@@ -12,6 +13,9 @@ from .effects import iter_registered_effects
 from .particles import Arrow, Particle
 from .score import Score
 from .sounds import AmbientSound
+
+
+logger = logging.getLogger('deathbeam')
 
 
 class Game(object):
@@ -76,7 +80,7 @@ class Game(object):
     def load(self):
         if self.loaded:
             return
-        print 'loading'
+        logging.info('loading')
 
         for cls in iter_registered_effects():
             self.effects.append(cls)
@@ -103,7 +107,7 @@ class Game(object):
         self.loaded = True
 
     def on_close(self):
-        print self.time
+        logging.info('shutdown at %s', self.time)
 
     def on_draw(self):
         self.window.clear()
@@ -182,7 +186,7 @@ class Game(object):
 
     def screenshot(self):
         filename = 'screenshot_%d.png' % time.time()
-        print 'writing screenshot to', filename
+        logging.info('writing screenshot to %s', filename)
         pyglet.image.get_buffer_manager().get_color_buffer().save(filename)
 
     def spawn(self, actor_cls, *args, **kwargs):

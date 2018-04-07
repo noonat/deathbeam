@@ -142,7 +142,7 @@ class Actor(object):
 
     @image.setter
     def image(self, new_image):
-        if isinstance(new_image, str) or isinstance(new_image, unicode):
+        if isinstance(new_image, str):
             new_image = pyglet.image.load(new_image)
             helpers.set_nearest(new_image)
         self._image = new_image

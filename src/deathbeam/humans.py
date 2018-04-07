@@ -28,14 +28,14 @@ class Civilian(Actor):
     POINTS = 50
 
     def __init__(self, *args, **kwargs):
-        super(Civilian, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.dead = False
         self.offset = None
         self.platform = None
         self.player = None
 
     def attach(self, anchor):
-        super(Civilian, self).attach(anchor)
+        super().attach(anchor)
         self.COLLIDE_WITH_ACTORS = True
         if isinstance(anchor, Player):
             self.player = anchor
@@ -43,7 +43,7 @@ class Civilian(Actor):
                                 why=self.NAME.upper())
 
     def detach(self):
-        super(Civilian, self).detach()
+        super().detach()
         if self.player:
             self.player.on_detached(self)
             self.player = None
@@ -61,7 +61,7 @@ class Civilian(Actor):
         if not self.anchor and isinstance(actor, Player):
             self.attach(actor)
         else:
-            return super(Civilian, self).on_collide(actor, collision)
+            return super().on_collide(actor, collision)
 
     def on_damage(self, actor):
         if self.player or isinstance(actor, Mothership):
@@ -77,7 +77,7 @@ class Civilian(Actor):
     def update(self, dt):
         if self.x < self.game.mothership.x and not self.dead:
             self.on_damage(self.game.mothership)
-        super(Civilian, self).update(dt)
+        super().update(dt)
         if self.platform:
             # FIXME: need to clamp to right side as well ... keep them on it
             if self.x < self.platform.x:
@@ -118,7 +118,7 @@ class Player(Actor):
     Z = defs.Z_PLAYER
 
     def __init__(self, *args, **kwargs):
-        super(Player, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.civilians = []
         self.jetpack_ignite_time = None
         self.jetpack_ignited = False
@@ -134,7 +134,7 @@ class Player(Actor):
         if self.has_rocket:
             old_y = self.y
             self.y += Rocket.HEIGHT
-        super(Player, self).draw()
+        super().draw()
         if self.has_rocket:
             self.y = old_y
 
@@ -226,7 +226,7 @@ class Player(Actor):
             self.game.spawn(smoke_cls, self.x, self.y, self.game.time + 0.1)
         # push em
         self.push(px, py)
-        super(Player, self).update(dt)
+        super().update(dt)
         if defs.SOUND:
             pyglet.media.listener.position = (self.x, self.y, 0)
 
@@ -248,7 +248,7 @@ class RescuePlatform(Actor):
     RESCUE_DELAY = 10.0
 
     def __init__(self, *args, **kwargs):
-        super(RescuePlatform, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.rescue_actors = []
         self.rescue_time = None
         self.cell = self.game.world.map.get_for_xy(self.x, self.y)
@@ -311,7 +311,7 @@ class RescuePlatform(Actor):
         if not self.cell:
             self.game.remove(self)
             return
-        super(RescuePlatform, self).update(dt)
+        super().update(dt)
         if self.rescue_time:
             if self.rescue_time <= self.game.time:
                 self.teleport_sound.play()
@@ -356,7 +356,7 @@ class Rocket(Actor):
             self.x = self.anchor.x + self.anchor.WIDTH * 0.5 - self.WIDTH * 0.5
             self.y = self.anchor.y
         else:
-            super(Rocket, self).update(dt)
+            super().update(dt)
 
 
 @register_actor
@@ -370,7 +370,7 @@ class RocketPad(Actor):
     Z = defs.Z_MAP_BACKGROUND
 
     def __init__(self, *args, **kwargs):
-        super(RocketPad, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.cell = self.game.world.map.get_for_xy(self.x, self.y)
         if self.cell['pad']:
             self.cell = None
@@ -405,4 +405,4 @@ class RocketPad(Actor):
         if not self.cell:
             self.game.remove(self)
             return
-        super(RocketPad, self).update(dt)
+        super().update(dt)

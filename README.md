@@ -66,17 +66,18 @@ To run, you'll need to install Python and the requirements. On Mac, you can do
 that using [Homebrew]:
 
     brew install python
+    pip install pipenv
     git clone git@github.com:noonat/deathbeam.git
     cd deathbeam
-    pip install -r requirements.txt
+    pipenv install
 
 Then you can run the game with:
 
-    ./scripts/deathbeam
+    pipenv run python ./scripts/deathbeam
 
 If you have performance issues, you can run it in optimized mode:
 
-    python -OO scripts/deathbeam
+    pipenv run python -OO scripts/deathbeam
 
 [Homebrew]: http://brew.sh/
 

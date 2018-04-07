@@ -41,17 +41,21 @@ class AmbientSound(Sound):
                  pitch=1.0, volume=1.0):
         if not defs.SOUND:
             return
-        super(AmbientSound, self).__init__(actor, filename, min_distance,
-                                           pitch, volume)
+        super().__init__(actor, filename, min_distance, pitch, volume)
         AmbientSound.sounds.append(self)
         self.auto_update = auto_update
+
+        self.source_group = pyglet.media.SourceGroup(self.sound.audio_format,
+                                                     None)
+        self.source_group.loop = True
+        self.source_group.queue(self.sound)
+
         self.player = pyglet.media.Player()
-        self.player.eos_action = pyglet.media.Player.EOS_LOOP
         self.player.min_distance = min_distance
         self.player.pitch = pitch
         self.player.volume = volume
         self.update()
-        self.player.queue(self.sound)
+        self.player.queue(self.source_group)
         self.player.play()
 
     @classmethod

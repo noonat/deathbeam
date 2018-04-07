@@ -28,7 +28,7 @@ class Mothership(Actor):
     Z = defs.Z_ACTOR_FOREGROUND
 
     def __init__(self, *args, **kwargs):
-        super(Mothership, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.beam_rotate = 0
         self.beam_rotate_time = 0
         self.beam_sounds = [
@@ -74,7 +74,7 @@ class Turret(Actor):
     HEIGHT = 10
 
     def __init__(self, *args, **kwargs):
-        super(Turret, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.fire_sound = Sound(self, 'turret_fire.wav')
         self.volley_rounds = 0
         self.volley_time = self.game.time + self.VOLLEY_DELAY
@@ -86,7 +86,7 @@ class Turret(Actor):
         bullet.vel_y = normal_y * self.VOLLEY_ROUNDS_SPEED
 
     def update(self, dt):
-        super(Turret, self).update(dt)
+        super().update(dt)
         if self.volley_time <= self.game.time:
             if self.volley_rounds >= self.VOLLEY_ROUNDS:
                 self.volley_time = self.game.time + self.VOLLEY_DELAY
